@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.Models;
-using WebAPI.Repositories;
+using Entities.Models;
+using Repositories.Contracts;
+using Repositories.EFCore;
 
 namespace WebAPI.Controllers
 {
@@ -11,19 +12,20 @@ namespace WebAPI.Controllers
     {
 
         //Dependency Injection
-        private readonly RepositoriesContext _context;
+        private readonly IRepositoryManager _manager;
 
-        public BookController(RepositoriesContext context)
+        public BookController(IRepositoryManager manager)
         {
-            _context = context;
+            _manager = manager;
         }
+
 
         [HttpGet]
         public IActionResult GetAllBooks()
         {
             try
             {
-                var books = _context.Books.ToList();
+                var books = _manager.Book.GetAllBook(false);
 
                 if (!books.Any())
                     return NotFound();
@@ -41,7 +43,7 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var book = _context.Books.ToList().Find(b => b.Id.Equals(id));
+                var book = _manager.Book.GetBook(id, false);
 
                 if (book is null)
                     return NotFound();
@@ -62,10 +64,14 @@ namespace WebAPI.Controllers
                 if (book is null)
                     return BadRequest("Created book is invalid format.");
 
+                //Check the book id is valid or not.
+                if (book.Id != 0)
+                    book.Id = 0;
+
                 //The new item was added to the dbSet in the _context object.
-                _context.Books.Add(book);
+                _manager.Book.CreateBook(book);
                 //The changes are saved.
-                _context.SaveChanges();
+                _manager.Save();
 
                 return StatusCode(201, book);
             }
@@ -76,12 +82,12 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut("{id:int}")]
-        public IActionResult UpdeteBook([FromRoute(Name = "id")] int id, [FromBody] Book book)
+        public IActionResult UpdateBook([FromRoute(Name = "id")] int id, [FromBody] Book book)
         {
             try
             {
                 //Get the entity from database
-                var entity = _context.Books.Where(b => b.Id.Equals(id)).SingleOrDefault();
+                var entity = _manager.Book.GetBook(id, true);
 
                 //Check the entity is null or not.
                 if (entity is null)
@@ -92,7 +98,8 @@ namespace WebAPI.Controllers
 
                 entity.Title = book.Title;
                 entity.Price = book.Price;
-                _context.SaveChanges();
+
+                _manager.Save();
 
                 return Ok(entity);
             }
@@ -108,14 +115,14 @@ namespace WebAPI.Controllers
             try
             {
                 //Get the book from the given id
-                var entity = _context.Books.Where(b => b.Id.Equals(id)).SingleOrDefault();
+                var entity = _manager.Book.GetBook(id, false);
 
                 //Check the book is exist.
                 if (entity is null)
                     return NotFound();
 
-                _context.Books.Remove(entity);
-                _context.SaveChanges();
+                _manager.Book.DeleteBook(entity);
+                _manager.Save();
 
                 return NoContent();
             }
@@ -125,15 +132,6 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpGet("{id:int}")]
-        public IActionResult isExistsBooksById([FromRoute(Name= "id")] int id)
-        {
-            var entity = _context.Books.Where(b => b.Id.Equals(id)).SingleOrDefault();
-
-            if (entity is null)
-                return NoContent();
-            else
-                return Ok("selamın aleyküm");
-        }
+        // TODO: Write patch version
     }
 }
