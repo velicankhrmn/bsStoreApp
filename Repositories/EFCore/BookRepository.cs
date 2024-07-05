@@ -10,7 +10,7 @@ namespace Repositories.EFCore
 {
     public class BookRepository : RepositoryBase<Book>, IBookRepository
     {
-        public BookRepository(RepositoriesContext context) : base(context)
+        public BookRepository(RepositoryContext context) : base(context)
         {
 
         }

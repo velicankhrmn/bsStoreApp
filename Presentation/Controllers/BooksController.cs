@@ -1,20 +1,22 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Entities.Models;
-using Repositories.Contracts;
-using Repositories.EFCore;
+using Microsoft.AspNetCore.Mvc;
+using Services.Contracts;
 
-namespace WebAPI.Controllers
+namespace Presentation.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class BookController : ControllerBase
+    [Route("api/books")]
+    public class BooksController : ControllerBase
     {
 
-        //Dependency Injection
-        private readonly IRepositoryManager _manager;
+        private readonly IServiceManager _manager;
 
-        public BookController(IRepositoryManager manager)
+        public BooksController(IServiceManager manager)
         {
             _manager = manager;
         }
@@ -25,14 +27,13 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var books = _manager.Book.GetAllBook(false);
+                var books = _manager.BookService.GetAllBooks(false);
 
                 if (!books.Any())
                     return NotFound();
 
                 return Ok(books);
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
@@ -43,14 +44,13 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var book = _manager.Book.GetBook(id, false);
+                var book = _manager.BookService.GetBook(id, false);
 
                 if (book is null)
                     return NotFound();
 
                 return Ok(book);
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
@@ -69,13 +69,10 @@ namespace WebAPI.Controllers
                     book.Id = 0;
 
                 //The new item was added to the dbSet in the _context object.
-                _manager.Book.CreateBook(book);
-                //The changes are saved.
-                _manager.Save();
+                _manager.BookService.CreateBook(book);
 
                 return StatusCode(201, book);
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
@@ -86,24 +83,14 @@ namespace WebAPI.Controllers
         {
             try
             {
-                //Get the entity from database
-                var entity = _manager.Book.GetBook(id, true);
+                //Check book
+                if (book is null)
+                    return BadRequest();
 
-                //Check the entity is null or not.
-                if (entity is null)
-                    return NotFound();
+                _manager.BookService.UpdateBook(id, book, true);
 
-                if (id != book.Id)
-                    return BadRequest("Given book has not same id.");
-
-                entity.Title = book.Title;
-                entity.Price = book.Price;
-
-                _manager.Save();
-
-                return Ok(entity);
-            }
-            catch (Exception e)
+                return NoContent(); // 204
+            } catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
@@ -114,24 +101,16 @@ namespace WebAPI.Controllers
         {
             try
             {
-                //Get the book from the given id
-                var entity = _manager.Book.GetBook(id, false);
-
-                //Check the book is exist.
-                if (entity is null)
-                    return NotFound();
-
-                _manager.Book.DeleteBook(entity);
-                _manager.Save();
+                _manager.BookService.DeleteBook(id, false);
 
                 return NoContent();
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
         }
 
         // TODO: Write patch version
+        //.NetCore.Asp.JsonPatch olacak kütüphane
     }
 }

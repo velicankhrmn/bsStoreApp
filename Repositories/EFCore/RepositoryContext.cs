@@ -9,9 +9,9 @@ using Repositories.EFCore.Config;
 
 namespace Repositories.EFCore
 {
-    public class RepositoriesContext : DbContext
+    public class RepositoryContext : DbContext
     {
-        public RepositoriesContext(DbContextOptions options) : base(options)
+        public RepositoryContext(DbContextOptions options) : base(options)
         {
             Console.WriteLine("Çağdaş Kirvemin daşşağını yerim....");
         }
